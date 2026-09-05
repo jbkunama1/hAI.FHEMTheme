@@ -1,7 +1,7 @@
 /*
  * hacardstyle.css
- * FHEMWEB-Theme "hacard" - Home-Assistant-artiges Karten-Layout,
- * gebaut ausschliesslich per CSS auf dem nativen FHEMWEB-Markup.
+ * FHEMWEB-Theme "hacard" - Home-Assistant-artiges Karten-Layout
+ * + Sidebar-Menue (Raumliste) links / ausklappbar auf Mobile.
  *
  * FHEMWEB rendert Raeume als <table class="room"> mit
  * <tr class="devTypeTr"> (Geraetetyp-Kopfzeile) und <tr class="column">
@@ -10,17 +10,21 @@
  * gezwungen (gleiche Technik wie im FHEM-Community-Theme "fhem-flex":
  * https://github.com/thecodingdad/fhem-flex).
  *
+ * Die Raumliste links (<div id="menu"><table>...) ist nativer FHEMWEB-
+ * Bestandteil (siehe 01_FHEMWEB.pm, $FW_room, "?room=..."-Links) - wird
+ * hier nur zur festen, scrollbaren Sidebar gestylt. Die Gruppierung in
+ * aufklappbare Abschnitte (per Praefix wie "0_", "00_", "1_", "99_" -
+ * exakt Daniels eigene Sortierkonvention) erledigt hacard.js rein
+ * clientseitig, ohne die FHEM-Config anzufassen.
+ *
  * Aktivierung in FHEM:
  *   attr WEB stylesheetPrefix hacard
  *   attr WEB JavaScripts pgm2/hacard.js
  *
  * Datei gehoert nach: <fhem>/www/pgm2/hacardstyle.css
  *
- * Wichtig: FHEMWEB faerbt Icons/Zustaende NICHT automatisch. Ob ein
- * Geraet "aktiv" aussieht (Farbe, anderes Icon), wird ausschliesslich
- * ueber das FHEM-Attribut devStateIcon je Geraet gesteuert - das ist
- * FHEM-Vorgabe und kann von einem Theme nicht ersetzt werden. Beispiele
- * dazu stehen in README.md.
+ * Wichtig: FHEMWEB faerbt Icons/Zustaende nicht automatisch. Das steuert
+ * ausschliesslich das Geraete-Attribut devStateIcon - siehe README.md.
  */
 
 :root{
@@ -33,23 +37,85 @@
   --accent:#ffb648;
   --accent-off:#3a4048;
   --radius:14px;
+  --menu-w:250px;
 }
+
+*{ box-sizing:border-box; }
 
 body{
   background:var(--bg) !important;
   color:var(--text);
   font-family:"Segoe UI", Roboto, Arial, sans-serif;
+  margin:0;
 }
 
 a{ color:var(--accent); text-decoration:none; }
 a:hover{ text-decoration:underline; }
 
-#hdr{ background:var(--bg-elevated); padding:10px 16px; border-bottom:1px solid var(--card-border); }
-#menu{ background:var(--bg-elevated); border-right:1px solid var(--card-border); }
-#menu table.room{ background:transparent; }
-#content{ padding:16px; }
+#hdr{
+  background:var(--bg-elevated);
+  padding:10px 16px;
+  border-bottom:1px solid var(--card-border);
+  display:flex; align-items:center; gap:12px;
+}
 
-/* --- devType-Kopfzeile als Section-Titel --- */
+/* ================= Sidebar / Raum-Menue ================= */
+#menu{
+  background:var(--bg-elevated);
+  border-right:1px solid var(--card-border);
+  position:fixed;
+  top:0; left:0; bottom:0;
+  width:var(--menu-w);
+  overflow-y:auto;
+  padding:56px 0 16px 0;
+  z-index:50;
+  transition:transform .2s ease;
+}
+#menu table{ width:100%; border-spacing:0; }
+#menu table td{ padding:0; }
+#menu a{
+  display:block;
+  padding:7px 16px;
+  color:var(--text);
+  font-size:13.5px;
+  border-radius:0;
+}
+#menu a:hover{ background:var(--card); text-decoration:none; color:var(--accent); }
+#menu img{ width:18px; height:18px; vertical-align:middle; margin-right:8px; opacity:.85; }
+
+/* Vom JS erzeugte, aufklappbare Gruppen (details/summary) */
+#menu details{ border-bottom:1px solid var(--card-border); }
+#menu summary{
+  cursor:pointer;
+  list-style:none;
+  padding:9px 16px;
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--text-dim);
+  display:flex; align-items:center; justify-content:space-between;
+}
+#menu summary::-webkit-details-marker{ display:none; }
+#menu summary::after{ content:"▸"; font-size:10px; transition:transform .15s ease; }
+#menu details[open] summary::after{ transform:rotate(90deg); }
+#menu details[open] summary{ color:var(--text); }
+
+/* Hamburger-Toggle (nur sichtbar auf schmalen Screens) */
+#hacardMenuToggle{
+  display:none;
+  background:var(--card);
+  border:1px solid var(--card-border);
+  color:var(--text);
+  border-radius:8px;
+  padding:6px 10px;
+  font-size:16px;
+  cursor:pointer;
+}
+
+/* Content rutscht neben die feste Sidebar */
+#content{ margin-left:var(--menu-w); padding:16px; }
+
+/* ================= Geraete-Karten ================= */
 tr.devTypeTr td, .devType{
   display:block;
   font-size:13px;
@@ -59,8 +125,6 @@ tr.devTypeTr td, .devType{
   padding:18px 2px 8px 2px !important;
   border:none !important;
 }
-
-/* --- Kern-Trick: aus Tabellenzeilen wird ein Karten-Grid --- */
 table.room{
   border-collapse:collapse;
   width:100%;
@@ -73,7 +137,6 @@ table.room tbody{
   gap:12px;
 }
 tr.devTypeTr{ grid-column:1 / -1; display:block; }
-
 table.room tr.column{
   display:flex;
   align-items:center;
@@ -85,55 +148,38 @@ table.room tr.column{
   box-shadow:0 1px 3px rgba(0,0,0,.35);
   transition:transform .12s ease, border-color .12s ease;
 }
-table.room tr.column:hover{
-  border-color:var(--accent);
-  transform:translateY(-1px);
-}
+table.room tr.column:hover{ border-color:var(--accent); transform:translateY(-1px); }
 table.room tr.column td{ display:contents; }
 
 div.col1{
-  font-weight:600;
-  font-size:14px;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex:1 1 auto;
-  min-width:0;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+  font-weight:600; font-size:14px; display:flex; align-items:center; gap:8px;
+  flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 div.col1 img, div.col1 svg{ width:28px; height:28px; flex:0 0 auto; }
-
-div.col2, div.col3{
-  flex:0 0 auto;
-  font-size:13px;
-  color:var(--text-dim);
-}
+div.col2, div.col3{ flex:0 0 auto; font-size:13px; color:var(--text-dim); }
 .dname{ color:var(--text); }
 .dval{ color:var(--accent); font-weight:600; }
 
-/* --- webCmd-Buttons (on/off/toggle) als Pillen wie HA-Toggles --- */
 div.col2 a, div.col3 a{
-  display:inline-block;
-  padding:5px 12px;
-  border-radius:999px;
-  background:var(--accent-off);
-  color:var(--text) !important;
-  font-size:12px;
-  text-decoration:none !important;
+  display:inline-block; padding:5px 12px; border-radius:999px; background:var(--accent-off);
+  color:var(--text) !important; font-size:12px; text-decoration:none !important;
   border:1px solid var(--card-border);
 }
 div.col2 a:hover, div.col3 a:hover{ border-color:var(--accent); }
 
-/* --- optionale Zustands-Hervorhebung ueber Klassen, die hacard.js setzt
-   (liest .dval-Text aus und ergaenzt data-state="on|off" am tr.column,
-   siehe hacard.js) --- */
 tr.column[data-state="on"]{ border-color:var(--accent); }
 tr.column[data-state="on"] div.col1{ color:var(--accent); }
 
-/* --- Mobile / kleine Bildschirme --- */
-@media (max-width:480px){
+/* ================= Mobile ================= */
+@media (max-width:900px){
+  #hacardMenuToggle{ display:inline-block; }
+  #menu{
+    transform:translateX(-100%);
+    width:min(80vw, 300px);
+    top:0; padding-top:56px;
+    box-shadow:2px 0 12px rgba(0,0,0,.5);
+  }
+  #menu.hacard-open{ transform:translateX(0); }
+  #content{ margin-left:0; }
   table.room tbody{ grid-template-columns:1fr; }
-  #menu{ position:static; width:100%; }
 }
