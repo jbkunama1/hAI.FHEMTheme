@@ -56,6 +56,34 @@ docker cp hacardsvg_defs.svg     <container>:/opt/fhem/www/pgm2/
 
 Danach wie oben die beiden `attr`-Befehle setzen.
 
+## Zugriff / Aufruf
+
+Kein separater Aufruf nötig – das Theme läuft in der bestehenden
+FHEMWEB-Instanz, nicht als eigenständige Anwendung.
+
+- **Standard:** einfach die gewohnte FHEMWEB-URL öffnen, z. B.
+  `http://192.168.178.15:8085/fhem` – sobald `attr WEB stylesheetPrefix
+  hacard` gesetzt ist, zeigt genau diese Instanz automatisch das neue
+  Karten-Layout. Kein neuer Port, kein zusätzlicher Container.
+- **FTUI bleibt unberührt:** FTUI ist ein komplett eigenes Frontend
+  (eigener Container/eigene URL) und wird von `hacard` nicht verändert.
+  Beide Oberflächen laufen unabhängig nebeneinander.
+- **Optional: eigene Instanz nur fürs Theme**, falls das klassische
+  FHEMWEB (z. B. für Admin-Aufgaben) parallel erhalten bleiben soll,
+  statt `WEB` direkt umzustellen:
+
+  ```
+  define WEBcards FHEMWEB 8086 global
+  attr WEBcards stylesheetPrefix hacard
+  attr WEBcards JavaScripts pgm2/hacard.js
+  ```
+
+  Danach erreichbar unter `http://192.168.178.15:8086/fhem`, während
+  `http://192.168.178.15:8085/fhem` unverändert bleibt.
+- **Fernzugriff:** Diese zweite Instanz kann bei Bedarf zusätzlich per
+  Cloudflare Tunnel auf eine eigene Subdomain gelegt werden (getrennt
+  von der bestehenden FTUI-/WEB-Tunnel-Route).
+
 ## Wichtig: devStateIcon ist weiterhin FHEM-Vorgabe
 
 Dieses Theme stylt nur das Layout. Ob ein Gerät farbig/aktiv aussieht,
