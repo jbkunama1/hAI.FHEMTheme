@@ -1,16 +1,8 @@
 /*
  * hacardstyle.css
  * FHEMWEB-Theme "hacard" - Home-Assistant-artiges Karten-Layout
- * + animierte Sidebar (Raumliste, aufklappbare Kategorien, Hamburger fuer Mobile)
- * + Karten-Animationen: Licht/Steckdose "leuchtet" im On-Zustand, Sensoren
- *   blitzen bei Wertaenderung kurz auf, kritische Werte pulsieren dauerhaft
- *   rot, Bewegungsmelder zeigen einen Ping-Ring
- * + Solar/Ertrag-Animation: Karten mit "Ertrag"/Solar-Bezug (z. B.
- *   Steckdose.Solar.II, MQTT2_deye_inverter_...) bekommen einen
- *   rotierenden Sonnen-Icon-Glanz + einen ueber die Karte laufenden
- *   Lichtschein, dessen Geschwindigkeit/Intensitaet sich nach der
- *   aktuellen Leistung (W) richtet - viel Ertrag = schneller/heller,
- *   kein Ertrag (Nacht) = fast steht der Effekt still.
+ * + animierte Sidebar, Karten-Animationen (Glow/Flash/Ping/Alert/Solar)
+ * + Styling der Geraete-Detailseite (Internals/Readings/Attributes)
  *
  * FHEMWEB rendert Raeume als <table class="room"> mit
  * <tr class="devTypeTr"> (Geraetetyp-Kopfzeile) und <tr class="column">
@@ -18,6 +10,15 @@
  * NICHT veraendert, sondern per CSS-Grid-Trick in ein Karten-Layout
  * gezwungen (gleiche Technik wie im FHEM-Community-Theme "fhem-flex":
  * https://github.com/thecodingdad/fhem-flex).
+ *
+ * Die Geraete-Detailseite (?detail=<name>) nutzt ANDERE Klassen, verifiziert
+ * in 01_FHEMWEB.pm (Funktion FW_makeTable): pro Abschnitt wird erzeugt
+ *   <div class="makeTable wide <lowercase-titel>">
+ *     <span class="mkTitle">Titel</span>
+ *     <table class="block wide <klasse>">...</table>
+ *   </div>
+ * fuer die drei Abschnitte "internals", "readings" und "attributes". Das
+ * wird hier zusaetzlich im hacard-Look gestylt.
  *
  * Aktivierung in FHEM:
  *   attr WEB stylesheetPrefix hacard
@@ -27,8 +28,6 @@
  *
  * Wichtig: FHEMWEB faerbt Icons/Zustaende nicht automatisch. Das steuert
  * ausschliesslich das Geraete-Attribut devStateIcon - siehe README.md.
- * data-state/data-alert/hacard-solar setzt hacard.js rein clientseitig
- * anhand des sichtbaren Karten-Textes (z. B. stateFormat-Ausgabe).
  */
 
 :root{
@@ -108,7 +107,7 @@ a:hover{ text-decoration:underline; }
 
 #content{ margin-left:var(--menu-w); padding:16px; }
 
-/* ================= Geraete-Karten ================= */
+/* ================= Geraete-Karten (Raumansicht) ================= */
 tr.devTypeTr td, .devType{
   display:block; font-size:13px; text-transform:uppercase; letter-spacing:.08em;
   color:var(--text-dim); padding:18px 2px 8px 2px !important; border:none !important;
@@ -186,17 +185,8 @@ tr.column[data-alert="1"] .dval{ color:var(--danger); }
 }
 tr.column.hacard-ping{ animation:hacard-ping .9s ease-out; }
 
-/* ============ Animation: Solar/Ertrag ============
-   hacard.js erkennt Karten mit "Ertrag"/"Solar"/"kwh" im Text (z. B.
-   Steckdose.Solar.II mit eigenem stateFormat, MQTT2 Deye-Wechselrichter)
-   und setzt die Klasse .hacard-solar plus die CSS-Variable --yield
-   (0 = keine Leistung/Nacht, 1 = hohe Leistung) aus dem geparsten
-   Watt-Wert. Ein Lichtschein laeuft ueber die Karte, das Sonnen-Icon
-   dreht sich langsam - beides schneller/heller bei mehr Ertrag. */
-tr.column.hacard-solar{
-  --yield:0.15;
-  border-color:var(--sun);
-}
+/* ============ Animation: Solar/Ertrag ============ */
+tr.column.hacard-solar{ --yield:0.15; border-color:var(--sun); }
 tr.column.hacard-solar::before{
   content:"";
   position:absolute; inset:0;
@@ -227,6 +217,70 @@ tr.column.hacard-solar .dval{ color:var(--sun); }
 tr.column.hacard-readonly{ cursor:pointer; }
 tr.column.hacard-readonly:hover{ border-color:var(--text-dim); }
 
+/* ================= Geraete-Detailseite ================= */
+div.makeTable{
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:var(--radius);
+  padding:12px 16px 8px;
+  margin:0 0 16px 0;
+  max-width:900px;
+}
+span.mkTitle{
+  display:block;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--text-dim);
+  margin-bottom:8px;
+}
+table.block.wide{
+  width:100%;
+  border-collapse:collapse;
+}
+table.block.wide tr{ border-bottom:1px solid var(--card-border); }
+table.block.wide tr:last-child{ border-bottom:none; }
+table.block.wide tr:nth-child(even){ background:rgba(255,255,255,.025); }
+table.block.wide td{
+  padding:6px 8px;
+  font-size:13px;
+  color:var(--text);
+  vertical-align:top;
+}
+table.block.wide td.col1{
+  color:var(--text-dim);
+  font-weight:600;
+  white-space:nowrap;
+}
+table.block.wide input[type="text"],
+table.block.wide select{
+  background:var(--bg-elevated);
+  border:1px solid var(--card-border);
+  color:var(--text);
+  border-radius:6px;
+  padding:4px 8px;
+}
+table.block.wide input[type="submit"],
+table.block.wide button{
+  background:var(--accent-off);
+  border:1px solid var(--card-border);
+  color:var(--text);
+  border-radius:8px;
+  padding:4px 12px;
+  cursor:pointer;
+}
+table.block.wide input[type="submit"]:hover,
+table.block.wide button:hover{ border-color:var(--accent); }
+
+/* Kurzes Aufblitzen einer Readings-Zeile bei Wertaenderung (Detailseite) */
+@keyframes hacard-rowflash{
+  0%{ background:rgba(255,182,72,.35); }
+  100%{ background:transparent; }
+}
+div.makeTable.readings table.block.wide tr.hacard-rowflash{
+  animation:hacard-rowflash .8s ease-out;
+}
+
 /* Barrierefreiheit */
 @media (prefers-reduced-motion: reduce){
   tr.column[data-state="on"],
@@ -235,6 +289,7 @@ tr.column.hacard-readonly:hover{ border-color:var(--text-dim); }
   tr.column.hacard-ping,
   tr.column.hacard-solar::before,
   tr.column.hacard-solar div.col1 .ico,
+  tr.hacard-rowflash,
   .menu-body,
   .menu-summary::after{
     animation:none !important;
@@ -252,4 +307,5 @@ tr.column.hacard-readonly:hover{ border-color:var(--text-dim); }
   #menu.hacard-open{ transform:translateX(0); }
   #content{ margin-left:0; }
   table.room tbody{ grid-template-columns:1fr; }
+  div.makeTable{ max-width:100%; }
 }

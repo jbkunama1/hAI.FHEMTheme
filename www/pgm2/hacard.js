@@ -9,17 +9,16 @@
  * kein eigener Server, kein eigenes Polling - FHEMWEB liefert Updates
  * bereits selbst per Longpoll, wir reagieren nur per MutationObserver):
  *
- * 1) On/Off-Erkennung + Leuchten fuer Lichter/Steckdosen.
- * 2) Kurzes Aufblitzen (.hacard-flash) bei JEDER Wertaenderung.
+ * 1) On/Off-Erkennung + Leuchten fuer Lichter/Steckdosen (Raumansicht).
+ * 2) Kurzes Aufblitzen (.hacard-flash) bei jeder Wertaenderung.
  * 3) Bewegungsmelder-Ping (.hacard-ping) beim Wechsel auf "motion".
  * 4) Dauerhaftes rotes Pulsieren (data-alert="1") bei kritischen Werten.
- * 5) Solar/Ertrag-Animation (.hacard-solar + CSS-Variable --yield):
- *    erkennt Karten mit "Ertrag"/"Solar"/"kwh" im sichtbaren Text (z. B.
- *    Steckdose.Solar.II mit eigenem stateFormat "Aktueller Ertrag: X W",
- *    oder MQTT2-Devices mit "active_power"/"total_energy"), liest die
- *    aktuelle Watt-Zahl aus dem Text und skaliert Geschwindigkeit/Glanz
- *    der Sonnen-Animation danach (0 W = fast ruhig, viel Leistung = lebhaft).
+ * 5) Solar/Ertrag-Animation (.hacard-solar + CSS-Variable --yield).
  * 6) Animierte Raum-Sidebar mit Kategorien-Akkordeon + Hamburger-Toggle.
+ * 7) Geraete-Detailseite (?detail=<name>): Readings-Zeilen im Abschnitt
+ *    "Readings" (div.makeTable.readings, siehe FW_makeTable in
+ *    01_FHEMWEB.pm) blitzen bei Wertaenderung ebenfalls kurz auf - gleiches
+ *    Prinzip wie in der Raumansicht, nur auf Tabellenzeilen-Ebene.
  *
  * Datei gehoert nach: <fhem>/www/pgm2/hacard.js
  */
@@ -32,18 +31,19 @@
   var SOLAR_WORDS = ["ertrag", "solar", "kwh", "pv"];
   var SOLAR_MAX_WATT = 1500; // Referenzwert fuer volle Animationsintensitaet; bei Bedarf anpassen
 
-  var lastValues = new WeakMap(); // row -> letzter Text (fuer Change-Erkennung)
+  var lastValues = new WeakMap(); // Element -> letzter Text (fuer Change-Erkennung)
 
-  function flash(row, cls) {
-    row.classList.remove(cls);
-    void row.offsetWidth; // Reflow erzwingen, damit die Animation neu startet
-    row.classList.add(cls);
-    row.addEventListener("animationend", function handler() {
-      row.classList.remove(cls);
-      row.removeEventListener("animationend", handler);
+  function flash(el, cls) {
+    el.classList.remove(cls);
+    void el.offsetWidth; // Reflow erzwingen, damit die Animation neu startet
+    el.classList.add(cls);
+    el.addEventListener("animationend", function handler() {
+      el.classList.remove(cls);
+      el.removeEventListener("animationend", handler);
     });
   }
 
+  /* ---------- Raumansicht: Karten ---------- */
   function markReadonly(row) {
     var hasButtons = row.querySelector(".col2 a, .col3 a");
     row.classList.toggle("hacard-readonly", !hasButtons);
@@ -62,7 +62,7 @@
     row.style.setProperty("--yield", ratio.toFixed(2));
   }
 
-  function updateRow(row, isFirstRun) {
+  function updateCardRow(row, isFirstRun) {
     var val = row.querySelector(".dval");
     var fullText = row.textContent.trim().toLowerCase();
     if (!val) {
@@ -91,7 +91,7 @@
 
   function enhanceCards() {
     document.querySelectorAll("table.room tr.column").forEach(function (row) {
-      updateRow(row, true);
+      updateCardRow(row, true);
     });
   }
 
@@ -101,7 +101,7 @@
       var row = m.target.closest ? m.target.closest("tr.column") : null;
       if (row && !seen.has(row)) {
         seen.add(row);
-        updateRow(row, false);
+        updateCardRow(row, false);
       }
     });
   });
@@ -110,6 +110,40 @@
     document.querySelectorAll("table.room tr.column").forEach(function (row) {
       cardObserver.observe(row, { childList: true, characterData: true, subtree: true });
     });
+  }
+
+  /* ---------- Detailseite: Readings-Zeilen ---------- */
+  function updateReadingRow(row, isFirstRun) {
+    var text = row.textContent.trim().toLowerCase();
+    var prev = lastValues.get(row);
+    if (!isFirstRun && prev !== undefined && prev !== text) {
+      flash(row, "hacard-rowflash");
+    }
+    lastValues.set(row, text);
+  }
+
+  function enhanceReadingsTable() {
+    var section = document.querySelector("div.makeTable.readings table.block.wide");
+    if (!section) return;
+    Array.prototype.slice.call(section.querySelectorAll("tr")).forEach(function (row) {
+      updateReadingRow(row, true);
+    });
+    return section;
+  }
+
+  function watchReadingsTable(section) {
+    if (!section) return;
+    var obs = new MutationObserver(function (mutations) {
+      var seen = new Set();
+      mutations.forEach(function (m) {
+        var row = m.target.closest ? m.target.closest("tr") : null;
+        if (row && section.contains(row) && !seen.has(row)) {
+          seen.add(row);
+          updateReadingRow(row, false);
+        }
+      });
+    });
+    obs.observe(section, { childList: true, characterData: true, subtree: true });
   }
 
   /* ---------- Animierte Raum-Sidebar ---------- */
@@ -192,6 +226,8 @@
   function init() {
     enhanceCards();
     watchCards();
+    var readingsSection = enhanceReadingsTable();
+    watchReadingsTable(readingsSection);
     buildSidebar();
     buildMenuToggle();
   }
