@@ -1,0 +1,30 @@
+/*
+ * hacardsvg_style.css
+ * SVG-Plot-Styling fuer das FHEMWEB-Theme "hacard".
+ * Struktur/Selektoren angelehnt an das offizielle darksvg_style.css
+ * aus fhem/fhem-mirror (Author: Volker), Farben an hacard angepasst.
+ *
+ * Datei gehoert nach: <fhem>/www/pgm2/hacardsvg_style.css
+ */
+
+text        { font-family:Arial, Helvetica, sans-serif; font-size:12px; fill:#e7ebef; }
+text.title  { font-family:Arial, Helvetica, sans-serif; font-size:16px; fill:#e7ebef; }
+text.legend { cursor:pointer; }
+text.copy   { text-decoration:underline; stroke:none; fill:#ffb648; cursor:pointer; }
+text.paste  { text-decoration:underline; stroke:none; fill:#ffb648; cursor:pointer; }
+
+circle#svgmarker { color:#ffb648; opacity:0.5; }
+
+rect.background { fill:#20252b; stroke:#2b3138; }
+line.grid       { stroke:#2b3138; stroke-width:0.5; }
+line.hgrid      { stroke:#2b3138; stroke-width:0.5; }
+
+/* Linienfarben je Plot-Reihe (l0-l7), Reihenfolge wie FHEM-Standardpalette */
+path.l0 { stroke:#ffb648; fill:none; stroke-width:1.5; }
+path.l1 { stroke:#5ab0ff; fill:none; stroke-width:1.5; }
+path.l2 { stroke:#7be27b; fill:none; stroke-width:1.5; }
+path.l3 { stroke:#e06060; fill:none; stroke-width:1.5; }
+path.l4 { stroke:#c68bff; fill:none; stroke-width:1.5; }
+path.l5 { stroke:#8a929c; fill:none; stroke-width:1.5; }
+path.l6 { stroke:#ffe066; fill:none; stroke-width:1.5; }
+path.l7 { stroke:#66d9c9; fill:none; stroke-width:1.5; }
